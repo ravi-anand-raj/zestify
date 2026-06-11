@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String            @id @default(uuid())
+  email           String            @unique
+  passwordHash    String?
+  status          String            @default("ACTIVE")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+
+  profile         UserProfile?
+  subscriptions   Subscription[]
+  accounts        Account[]
+  conversations   AiConversation[]
+  zestScores      ZestScore[]
+  dailyNetWorth   DailyNetWorth[]
+}
+
+model UserProfile {
+  id                     String  @id @default(uuid())
+  userId                 String  @unique
+  user                   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName              String?
+  lastName               String?
+  phoneNumber            String?
+  riskTolerance          String  @default("MODERATE")
+  financialLiteracyLevel Int     @default(3)
+}
+
+model Institution {
+  id           String    @id @default(uuid())
+  plaidInsId   String?   @unique
+  name         String
+  logoUrl      String?
+  accounts     Account[]
+}
+
+model Account {
+  id                String       @id @default(uuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionId     String
+  institution       Institution  @relation(fields: [institutionId], references: [id])
+  plaidAccountId    String?      @unique
+  name              String
+  type              String
+  subtype           String?
+  currentBalance    Decimal
+  availableBalance  Decimal?
+  currency          String       @default("INR")
+  lastSyncedAt      DateTime     @default(now())
+  
+  transactions      Transaction[]
+  holdings          Holding[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id                 String   @id @default(uuid())
+  accountId          String
+  account            Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  plaidTransactionId String?  @unique
+  amount             Decimal
+  date               DateTime
+  merchantName       String?
+  categoryPrimary    String?
+  categoryDetailed   String?
+  isSubscription     Boolean  @default(false)
+
+  @@index([accountId])
+  @@index([date])
+}
+
+model Security {
+  id            String       @id @default(uuid())
+  tickerSymbol  String       @unique
+  name          String
+  assetClass    String
+  holdings      Holding[]
+}
+
+model Holding {
+  id           String    @id @default(uuid())
+  accountId    String
+  account      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  securityId   String
+  security     Security  @relation(fields: [securityId], references: [id])
+  quantity     Decimal
+  costBasis    Decimal?
+  currentValue Decimal
+}
+
+model Subscription {
+  id                     String             @id @default(uuid())
+  userId                 String             @unique
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpayCustomerId     String?            @unique
+  razorpaySubscriptionId String?
+  tier                   String             @default("FREE")
+  status                 String             @default("ACTIVE")
+  currentPeriodEnd       DateTime?
+  
+  billingHistory         BillingHistory[]
+}
+
+model BillingHistory {
+  id               String       @id @default(uuid())
+  subscriptionId   String
+  subscription     Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount           Decimal
+  status           String
+  invoiceDate      DateTime     @default(now())
+}
+
+model AiConversation {
+  id        String       @id @default(uuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  createdAt DateTime     @default(now())
+  
+  messages  AiMessage[]
+
+  @@index([userId])
+}
+
+model AiMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  tokensUsed     Int?
+  createdAt      DateTime       @default(now())
+
+  @@index([createdAt])
+}
+
+model ZestScore {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score          Int
+  componentsJson String?
+  calculatedAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model DailyNetWorth {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             DateTime
+  totalAssets      Decimal
+  totalLiabilities Decimal
+  netWorth         Decimal
+
+  @@unique([userId, date])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String
+  action      String
+  entityTable String
+  entityId    String
+  oldValues   String?
+  newValues   String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
