@@ -1,128 +1,269 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowUpRight, TrendingUp, Wallet, ShieldAlert, Zap, Bot } from "lucide-react"
-import prisma from "@zestify/db"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
-import { redirect } from "next/navigation"
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Wallet, ShieldAlert, Zap, Bot, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/shared/PageHeader"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { useState, useEffect } from "react"
 
-export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
-  
-  if (!session?.user) {
-    redirect('/login')
-  }
+const netWorthData = [
+  { month: "Jul", value: 85000 },
+  { month: "Aug", value: 87500 },
+  { month: "Sep", value: 86200 },
+  { month: "Oct", value: 91000 },
+  { month: "Nov", value: 95800 },
+  { month: "Dec", value: 98200 },
+  { month: "Jan", value: 101500 },
+  { month: "Feb", value: 104200 },
+  { month: "Mar", value: 107800 },
+  { month: "Apr", value: 109500 },
+  { month: "May", value: 113200 },
+  { month: "Jun", value: 124562 },
+]
 
-  // Fetch live data from Prisma
-  const userAccounts = await prisma.account.findMany({
-    where: { userId: (session.user as any).id },
-    include: { holdings: true }
-  })
+const aiFeedItems = [
+  {
+    id: "1",
+    icon: ShieldAlert,
+    title: "Hidden Fee Detected",
+    body: "Your Vanguard Mutual Fund charges 1.2%. ETF VOO is identical at 0.03%.",
+    variant: "warning" as const,
+    time: "2m ago",
+  },
+  {
+    id: "2",
+    icon: TrendingUp,
+    title: "AAPL Earnings Update",
+    body: "Apple beat Q3 estimates by 12%. Probability of positive short-term momentum: 72%.",
+    variant: "accent" as const,
+    time: "15m ago",
+  },
+  {
+    id: "3",
+    icon: Zap,
+    title: "Rebalancing Suggested",
+    body: "Your equity allocation has drifted to 82%. Consider rebalancing to 75%.",
+    variant: "primary" as const,
+    time: "1h ago",
+  },
+]
 
-  let totalAssets = 0
-  userAccounts.forEach(acc => {
-    totalAssets += Number(acc.currentBalance)
-    acc.holdings.forEach(h => {
-      totalAssets += Number(h.currentValue)
-    })
-  })
+const metrics = [
+  {
+    title: "Total Net Worth",
+    value: "₹1,24,562.20",
+    change: "+2.5%",
+    trend: "up" as const,
+    icon: Wallet,
+    color: "text-foreground",
+    href: "/portfolio",
+  },
+  {
+    title: "Zest-Score",
+    value: "782",
+    change: "Top 14%",
+    trend: "up" as const,
+    icon: Zap,
+    color: "text-primary",
+    highlight: true,
+    href: "/portfolio",
+  },
+  {
+    title: "Monthly Savings",
+    value: "₹45,200",
+    change: "+8.2%",
+    trend: "up" as const,
+    icon: TrendingUp,
+    color: "text-foreground",
+    href: "/goals",
+  },
+  {
+    title: "Active Goals",
+    value: "3",
+    change: "1 near completion",
+    trend: "up" as const,
+    icon: Bot,
+    color: "text-foreground",
+    href: "/goals",
+  },
+]
 
-  const zestScoreRecord = await prisma.zestScore.findFirst({
-    where: { userId: (session.user as any).id },
-    orderBy: { calculatedAt: 'desc' }
-  })
-  
-  const zestScore = zestScoreRecord?.score || 782
+const variantStyles = {
+  warning: "bg-warning/10 border-warning/20",
+  accent: "bg-accent/10 border-accent/20",
+  primary: "bg-primary/10 border-primary/20",
+}
+
+const iconColorStyles = {
+  warning: "text-warning",
+  accent: "text-accent",
+  primary: "text-primary",
+}
+
+export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Overview</h2>
-          <p className="text-muted-foreground mt-1">Here is your financial intelligence for today.</p>
-        </div>
+    <div className="space-y-6 max-w-[1400px]">
+      <PageHeader
+        icon={Wallet}
+        title="Overview"
+        description="Your financial intelligence for today."
+      >
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2">
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Refresh</span>
+        </Button>
+      </PageHeader>
+
+      {/* Metric Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        {metrics.map((metric, i) => {
+          const Icon = metric.icon
+          return (
+            <a key={metric.title} href={metric.href}>
+              <Card
+                className={`group hover:bg-white/[0.03] hover:border-white/[0.08] transition-all duration-300 cursor-pointer animate-slide-up ${metric.highlight ? "relative overflow-hidden" : ""}`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                {metric.highlight && (
+                  <div className="absolute top-0 right-0 p-4 opacity-[0.06]">
+                    <Icon className="h-20 w-20 text-primary" />
+                  </div>
+                )}
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+                    {metric.title}
+                  </CardTitle>
+                  <Icon className={`h-4 w-4 ${metric.highlight ? "text-primary" : "text-muted-foreground"}`} />
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <div className={`text-xl sm:text-3xl font-bold ${metric.color}`}>
+                    {metric.value}
+                  </div>
+                  <p className={`text-xs mt-1 flex items-center gap-1 ${metric.trend === "up" ? "text-accent" : "text-destructive"}`}>
+                    {metric.trend === "up" ? (
+                      <ArrowUpRight className="h-3 w-3" />
+                    ) : (
+                      <ArrowDownRight className="h-3 w-3" />
+                    )}
+                    {metric.change}
+                  </p>
+                </CardContent>
+              </Card>
+            </a>
+          )
+        })}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {/* Net Worth */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Net Worth</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">₹{totalAssets.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            <p className="text-xs text-accent mt-1 flex items-center">
-              <ArrowUpRight className="h-3 w-3 mr-1" />
-              +2.5% from last month
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* ZEST Score */}
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <TrendingUp className="h-24 w-24 text-primary" />
-          </div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-primary">Zest-Score</CardTitle>
-            <Zap className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-white">{zestScore}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Top 14% of your age bracket
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-7">
-        {/* Main Chart Area */}
-        <Card className="md:col-span-4 lg:col-span-5">
+      {/* Chart + AI Feed */}
+      <div className="grid gap-4 lg:grid-cols-7">
+        {/* Wealth Trajectory Chart */}
+        <Card className="lg:col-span-5">
           <CardHeader>
-            <CardTitle>Wealth Trajectory</CardTitle>
-            <CardDescription>Your net worth over the last 12 months</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Wealth Trajectory</CardTitle>
+                <CardDescription>Net worth over the last 12 months</CardDescription>
+              </div>
+              <Badge variant="outline" className="text-accent border-accent/20">
+                +46.6%
+              </Badge>
+            </div>
           </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center border border-dashed border-white/10 rounded-xl m-6 mt-0">
-            <p className="text-muted-foreground text-sm">Spline Chart Component Loaded</p>
+          <CardContent className="pt-0">
+            <div className="h-[280px] sm:h-[320px] w-full">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={netWorthData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#0A84FF" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#0A84FF" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: "rgba(255,255,255,0.4)" }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: "rgba(255,255,255,0.4)" }}
+                      tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1C1C1E",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "12px",
+                        boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
+                        fontSize: "12px",
+                      }}
+                      labelStyle={{ color: "rgba(255,255,255,0.6)" }}
+                      itemStyle={{ color: "#0A84FF" }}
+                      formatter={(value: number) => [`₹${value.toLocaleString("en-IN")}`, "Net Worth"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#0A84FF"
+                      strokeWidth={2}
+                      fill="url(#valueGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* ZUST AI Feed */}
-        <Card className="md:col-span-3 lg:col-span-2 flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center text-warning">
-              <Bot className="h-5 w-5 mr-2" />
+        <Card className="lg:col-span-2 flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bot className="h-4 w-4 text-primary" />
               ZUST AI Feed
             </CardTitle>
             <CardDescription>Real-time actionable insights</CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 space-y-4">
-            
-            <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-              <div className="flex items-start gap-2">
-                <ShieldAlert className="h-4 w-4 text-warning mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-white">Hidden Fee Detected</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your Vanguard Mutual Fund charges 1.2%. ETF VOO is identical at 0.03%.
-                  </p>
+          <CardContent className="flex-1 space-y-3 pt-0">
+            {aiFeedItems.map((item, i) => {
+              const Icon = item.icon
+              return (
+                <div
+                  key={item.id}
+                  className={`p-3 rounded-xl ${variantStyles[item.variant]} border animate-slide-up`}
+                  style={{ animationDelay: `${i * 100}ms`}
+                  }
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Icon className={`h-4 w-4 ${iconColorStyles[item.variant]} mt-0.5 shrink-0`} />
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium truncate">{item.title}</p>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{item.time}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.body}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-              <div className="flex items-start gap-2">
-                <TrendingUp className="h-4 w-4 text-accent mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-white">AAPL Earnings Update</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Apple beat Q3 estimates by 12%. Probability of positive short-term momentum: 72%.
-                  </p>
-                </div>
-              </div>
-            </div>
-
+              )
+            })}
+            <a href="/zust-ai">
+              <Button variant="ghost" size="sm" className="w-full text-primary hover:text-primary/80 text-xs mt-2">
+                View all insights
+              </Button>
+            </a>
           </CardContent>
         </Card>
       </div>
