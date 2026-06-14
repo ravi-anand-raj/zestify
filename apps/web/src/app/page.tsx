@@ -1,8 +1,9 @@
 "use client"
 
-import { Zap, Shield, Brain, TrendingUp, ChartBar as BarChart3, ArrowRight } from "lucide-react"
+import { TrendingUp, Shield, Brain, BarChart3, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { ZestifyLogo } from "@/components/shared/ZestifyLogo"
 
 const features = [
   {
@@ -29,21 +30,14 @@ const features = [
 
 export default function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col bg-[#050508] text-white overflow-hidden">
+    <main className="flex min-h-screen flex-col bg-background text-foreground overflow-hidden">
       {/* Hero Section */}
       <section className="relative flex flex-col items-center justify-center min-h-screen px-6 py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(10,132,255,0.12),transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_80%_50%,rgba(48,209,88,0.06),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(34,197,94,0.08),transparent)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(34,197,94,0.12),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_80%_50%,rgba(10,132,255,0.04),transparent)] dark:bg-[radial-gradient(ellipse_60%_40%_at_80%_50%,rgba(10,132,255,0.06),transparent)]" />
 
         <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-5 sm:px-10">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-primary to-accent">
-              <Zap className="h-4 w-4 text-black" />
-            </div>
-            <span className="text-lg font-bold tracking-tighter text-gradient-primary">
-              ZESTIFY
-            </span>
-          </div>
+          <ZestifyLogo size="sm" />
           <div className="flex items-center gap-3">
             <a href="/login">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -60,12 +54,12 @@ export default function LandingPage() {
 
         <div className="relative z-10 w-full max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
-            <Zap className="h-3.5 w-3.5 text-primary" />
+            <TrendingUp className="h-3.5 w-3.5 text-primary" />
             <span className="text-xs font-medium text-primary">The Future of Personal Finance</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter leading-[1.1] mb-6 animate-slide-up">
-            <span className="text-gradient-primary">Intelligence</span>
+            <span className="text-gradient-brand">Intelligence</span>
             {" "}over
             {" "}<span className="text-foreground">Execution</span>
           </h1>
@@ -82,7 +76,7 @@ export default function LandingPage() {
               </Button>
             </a>
             <a href="/login">
-              <Button variant="outline" className="h-12 px-8 rounded-full text-base font-semibold border-white/10 hover:bg-white/[0.04]">
+              <Button variant="outline" className="h-12 px-8 rounded-full text-base font-semibold border-border hover:bg-muted/50 dark:hover:bg-white/[0.04]">
                 Log In
               </Button>
             </a>
@@ -92,7 +86,7 @@ export default function LandingPage() {
 
       {/* Features Section */}
       <section className="relative px-6 py-24 sm:px-10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(10,132,255,0.05),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(10,132,255,0.03),transparent)] dark:bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(10,132,255,0.05),transparent)]" />
         <div className="relative z-10 max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
@@ -107,7 +101,7 @@ export default function LandingPage() {
             {features.map((feature, i) => (
               <Card
                 key={feature.title}
-                className="bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300 group animate-slide-up"
+                className="bg-card/50 dark:bg-white/[0.02] border-border hover:bg-muted/30 dark:hover:bg-white/[0.04] hover:border-muted-foreground/20 dark:hover:border-white/[0.1] transition-all duration-300 group animate-slide-up hover:shadow-card-hover"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 <CardContent className="p-6">
@@ -125,7 +119,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="relative px-6 py-24 sm:px-10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_80%,rgba(48,209,88,0.06),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_80%,rgba(34,197,94,0.04),transparent)] dark:bg-[radial-gradient(ellipse_60%_40%_at_50%_80%,rgba(48,209,88,0.06),transparent)]" />
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">
             Ready to optimize your wealth?
@@ -142,14 +136,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-white/[0.04] px-6 py-8 sm:px-10">
+      <footer className="border-t border-border px-6 py-8 sm:px-10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-tr from-primary to-accent">
-              <Zap className="h-3 w-3 text-black" />
-            </div>
-            <span className="text-sm font-semibold tracking-tighter text-gradient-primary">ZESTIFY</span>
-          </div>
+          <ZestifyLogo size="xs" />
           <p className="text-xs text-muted-foreground">
             Statistical intelligence, not financial advice.
           </p>

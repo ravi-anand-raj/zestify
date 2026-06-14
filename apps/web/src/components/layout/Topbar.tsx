@@ -20,78 +20,77 @@ import {
 } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { signOut } from "next-auth/react"
+import { InstallPWA } from "@/components/ui/InstallPWA"
+import { signOut, useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
-
-const pageTitles: Record<string, string> = {
-  "/dashboard": "Overview",
-  "/portfolio": "Portfolio Intelligence",
-  "/watchlist": "Watchlist Intelligence",
-  "/zust-ai": "ZUST AI Copilot",
-  "/roadmap": "Wealth Roadmap",
-  "/goals": "Goal Planner",
-  "/simulator": "What-If Simulator",
-  "/billing": "Billing & Subscription",
-  "/settings": "Settings",
-}
-
-const notifications = [
-  {
-    id: "1",
-    title: "AAPL Earnings Update",
-    body: "Apple beat Q3 estimates by 12%. View analysis.",
-    time: "2m ago",
-    type: "market_update" as const,
-    read: false,
-  },
-  {
-    id: "2",
-    title: "Hidden Fee Detected",
-    body: "Your Vanguard Mutual Fund charges 1.2%. Consider switching.",
-    time: "15m ago",
-    type: "ai_insight" as const,
-    read: false,
-  },
-  {
-    id: "3",
-    title: "Goal Milestone",
-    body: "Emergency Fund is 92% complete. Keep going!",
-    time: "1h ago",
-    type: "goal_milestone" as const,
-    read: true,
-  },
-]
+import { useLanguage } from "@/components/providers/LanguageProvider"
+import { CommandMenu } from "@/components/layout/CommandMenu"
 
 export function Topbar() {
   const pathname = usePathname()
+  const { t } = useLanguage()
+  const { data: session } = useSession()
+
+  const pageTitles: Record<string, string> = {
+    "/dashboard": t.pages.overview,
+    "/portfolio": t.pages.portfolioIntelligence,
+    "/watchlist": t.pages.watchlistIntelligence,
+    "/updates": t.pages.financeUpdates,
+    "/news": t.pages.newsHub,
+    "/zust-ai": t.pages.zustAiCopilot,
+    "/roadmap": t.pages.wealthRoadmap,
+    "/goals": t.pages.goalPlanner,
+    "/simulator": t.pages.whatIfSimulator,
+    "/billing": t.pages.billingSubscription,
+    "/settings": t.pages.settings,
+    "/profile": t.pages.profile,
+  }
+
+  const notifications = [
+    {
+      id: "1",
+      title: "AAPL Earnings Update",
+      body: "Apple beat Q3 estimates by 12%. View analysis.",
+      time: "2m ago",
+      type: "market_update" as const,
+      read: false,
+    },
+    {
+      id: "2",
+      title: "Hidden Fee Detected",
+      body: "Your Vanguard Mutual Fund charges 1.2%. Consider switching.",
+      time: "15m ago",
+      type: "ai_insight" as const,
+      read: false,
+    },
+    {
+      id: "3",
+      title: "Goal Milestone",
+      body: "Emergency Fund is 92% complete. Keep going!",
+      time: "1h ago",
+      type: "goal_milestone" as const,
+      read: true,
+    },
+  ]
+
   const pageTitle = (pathname && pageTitles[pathname]) || ""
   const unreadCount = notifications.filter((n) => !n.read).length
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-white/[0.04] bg-[#050508]/80 backdrop-blur-xl px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/80 dark:bg-background/80 backdrop-blur-xl px-4 lg:px-6">
       {/* Page Title */}
       <div className="flex-1 flex items-center gap-3 pl-12 lg:pl-0">
         {pageTitle && (
-          <h1 className="text-sm font-medium text-foreground hidden sm:block">
+          <h1 className="text-sm font-semibold text-foreground hidden sm:block">
             {pageTitle}
           </h1>
         )}
       </div>
 
-      {/* Search */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="hidden md:flex items-center gap-2 h-8 px-3 text-muted-foreground hover:text-foreground bg-white/[0.03] border border-white/[0.06] rounded-full"
-        aria-label="Search"
-      >
-        <Search className="h-3.5 w-3.5" />
-        <span className="text-xs">Search...</span>
-        <kbd className="ml-2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-          <span className="text-xs">&#8984;K</span>
-        </kbd>
-      </Button>
+      <InstallPWA />
+
+      {/* Search Command Palette */}
+      <CommandMenu />
 
       {/* Notifications */}
       <Popover>
@@ -99,7 +98,7 @@ export function Topbar() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/[0.06]"
+            className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 dark:hover:bg-white/[0.06]"
             aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
           >
             <Bell className="h-[18px] w-[18px]" />
@@ -112,7 +111,7 @@ export function Topbar() {
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0" align="end">
           <div className="flex items-center justify-between px-4 py-3">
-            <h4 className="text-sm font-semibold">Notifications</h4>
+            <h4 className="text-sm font-semibold">{t.settings.notifications}</h4>
             <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-primary hover:text-primary/80">
               Mark all read
             </Button>
@@ -124,8 +123,8 @@ export function Topbar() {
                 <div
                   key={n.id}
                   className={cn(
-                    "flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-white/[0.03] cursor-pointer",
-                    !n.read && "bg-primary/[0.03]"
+                    "flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-muted/50 dark:hover:bg-white/[0.03] cursor-pointer",
+                    !n.read && "bg-primary/[0.04] dark:bg-primary/[0.03]"
                   )}
                 >
                   <div className="flex items-center gap-2">
@@ -144,31 +143,33 @@ export function Topbar() {
       {/* User Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 hover:bg-white/[0.06]" aria-label="User menu">
+          <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 hover:bg-muted/60 dark:hover:bg-white/[0.06]" aria-label="User menu">
             <Avatar className="h-8 w-8">
-              <AvatarFallback>JS</AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                {session?.user?.name ? session.user.name.substring(0, 2).toUpperCase() : "U"}
+              </AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">John Smith</p>
-              <p className="text-xs text-muted-foreground">john@example.com</p>
+              <p className="text-sm font-medium">{session?.user?.name || "User"}</p>
+              <p className="text-xs text-muted-foreground">{session?.user?.email || ""}</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <a href="/settings" className="flex items-center cursor-pointer">
+              <a href="/profile" className="flex items-center cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
-                Profile
+                {t.nav.profile}
               </a>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <a href="/settings" className="flex items-center cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />
-                Settings
+                {t.nav.settings}
               </a>
             </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer">
@@ -182,7 +183,7 @@ export function Topbar() {
             onSelect={() => signOut({ callbackUrl: "/login" })}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Log out
+            {t.common.logOut}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

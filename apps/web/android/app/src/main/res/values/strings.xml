@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zestify</string>
+    <string name="title_activity_main">Zestify</string>
+    <string name="package_name">com.zestify.ai</string>
+    <string name="custom_url_scheme">com.zestify.ai</string>
+</resources>

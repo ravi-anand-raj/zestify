@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,11 +10,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#050508',
-        foreground: '#F5F5F7',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: '#0A84FF',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
           50: '#E6F1FF',
           100: '#B8D7FF',
           200: '#8ABDFF',
@@ -26,20 +27,20 @@ const config: Config = {
           900: '#001C6F',
         },
         secondary: {
-          DEFAULT: '#1C1C1E',
-          foreground: '#EBEBF5',
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
         },
         card: {
-          DEFAULT: '#1C1C1E',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
         muted: {
-          DEFAULT: '#2C2C2E',
-          foreground: '#EBEBF5',
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
-          DEFAULT: '#30D158',
-          foreground: '#000000',
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
           50: '#E8FAED',
           100: '#B5EFC2',
           200: '#82E497',
@@ -52,12 +53,12 @@ const config: Config = {
           900: '#023912',
         },
         destructive: {
-          DEFAULT: '#FF453A',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
         warning: {
-          DEFAULT: '#FF9F0A',
-          foreground: '#000000',
+          DEFAULT: 'hsl(var(--warning))',
+          foreground: 'hsl(var(--warning-foreground))',
         },
         success: {
           DEFAULT: '#30D158',
@@ -67,12 +68,13 @@ const config: Config = {
           DEFAULT: '#5AC8FA',
           foreground: '#000000',
         },
-        border: '#FFFFFF0D',
-        input: '#FFFFFF0D',
-        ring: '#0A84FF',
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
@@ -85,9 +87,10 @@ const config: Config = {
         'glow-accent': '0 0 20px rgba(48,209,88,0.15)',
         'glow-warning': '0 0 20px rgba(255,159,10,0.15)',
         'glow-destructive': '0 0 20px rgba(255,69,58,0.15)',
-        'card': '0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
-        'card-hover': '0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2)',
-        'elevated': '0 8px 30px rgba(0,0,0,0.5)',
+        'card': '0 1px 3px hsl(var(--shadow-color) / 0.08), 0 1px 2px hsl(var(--shadow-color) / 0.06)',
+        'card-hover': '0 4px 12px hsl(var(--shadow-color) / 0.1), 0 2px 4px hsl(var(--shadow-color) / 0.06)',
+        'elevated': '0 8px 30px hsl(var(--shadow-color) / 0.12)',
+        'soft': '0 2px 8px hsl(var(--shadow-color) / 0.06)',
       },
       keyframes: {
         'fade-in': {
@@ -137,6 +140,10 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-6px)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out',
@@ -151,9 +158,10 @@ const config: Config = {
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'float': 'float 3s ease-in-out infinite',
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 };
 export default config;

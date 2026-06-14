@@ -521,6 +521,7 @@ model Asset {
   holdings         PortfolioHolding[]
   transactions     Transaction[]
   watchlistItems   WatchlistItem[]
+  priceHistory     AssetPriceHistory[]
 
   @@unique([symbol, exchange], map: "uq_asset_symbol_exchange")
   @@index([type])
@@ -584,6 +585,25 @@ model PortfolioHolding {
   @@unique([portfolioId, assetId], map: "uq_holding_portfolio_asset")
   @@index([assetId])
   @@map("portfolio_holdings")
+}
+
+/// Historical time-series data for an asset's price.
+model AssetPriceHistory {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assetId   String   @map("asset_id") @db.Uuid
+  date      DateTime @db.Date
+  open      Decimal  @db.Decimal(15, 4)
+  high      Decimal  @db.Decimal(15, 4)
+  low       Decimal  @db.Decimal(15, 4)
+  close     Decimal  @db.Decimal(15, 4)
+  volume    BigInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, date], map: "uq_asset_history_date")
+  @@index([assetId, date(sort: Desc)])
+  @@map("asset_price_history")
 }
 
 // ════════════════════════════════════════════════════════════════════════════

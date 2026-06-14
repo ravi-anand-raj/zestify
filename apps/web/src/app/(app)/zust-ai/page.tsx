@@ -1,148 +1,66 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useRef, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bot, Send, ShieldAlert, Sparkles, TrendingUp, Copy, RefreshCw, CircleAlert as AlertCircle, ChartBar as BarChart3, Wallet, Target } from "lucide-react"
+import { Bot, Send, Sparkles, Copy, CircleAlert as AlertCircle, BarChart3, Wallet, Target, Globe, Activity } from "lucide-react"
 import { toast } from "sonner"
-
-type Message = {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  parsed?: {
-    insight: string
-    explainable_reasoning: string
-    probability: string
-    confidence: string
-    risk_score: string
-    disclaimer: string
-  }
-}
+import { useChat } from "@ai-sdk/react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 const suggestedPrompts = [
-  { icon: BarChart3, label: "Analyze my portfolio", prompt: "Analyze my current portfolio allocation and identify risks" },
-  { icon: Wallet, label: "Check AAPL outlook", prompt: "What is the current outlook for AAPL?" },
-  { icon: Target, label: "Tax optimization", prompt: "Are there any tax-loss harvesting opportunities in my portfolio?" },
-  { icon: TrendingUp, label: "Market conditions", prompt: "What are current macroeconomic conditions and how do they affect my investments?" },
+  { icon: BarChart3, label: "Analyze AAPL", prompt: "What is the current outlook for AAPL?" },
+  { icon: Wallet, label: "Compare stocks", prompt: "Compare AAPL vs MSFT" },
+  { icon: Globe, label: "Market overview", prompt: "What are the top market movers today?" },
+  { icon: Target, label: "Earnings Report", prompt: "Get earnings data for NVDA" },
 ]
 
-const mockResponses: Record<string, Message["parsed"]> = {
-  default: {
-    insight: "Based on recent market trends, your portfolio allocation is stable with moderate upside potential.",
-    explainable_reasoning: "Inflation data released today shows a cooling trend, meaning cash purchasing power erosion has slowed. Combined with stable employment figures, the current economic environment favors balanced growth strategies.",
-    probability: "85%",
-    confidence: "High",
-    risk_score: "Low",
-    disclaimer: "This is statistical intelligence, not financial advice. Do not make buy/sell decisions based on AI outputs.",
-  },
-  aapl: {
-    insight: "Apple (AAPL) shows positive momentum indicators following their latest earnings report.",
-    explainable_reasoning: "Revenue grew 12% YoY, primarily driven by Services. Hardware sales remained flat. Algorithmic analysis suggests short-term stability with 72% probability of positive momentum.",
-    probability: "72%",
-    confidence: "Medium (81%)",
-    risk_score: "Medium (5/10)",
-    disclaimer: "This is informational analysis only and not financial advice. Do not make buy/sell decisions solely based on statistical probabilities.",
-  },
-  portfolio: {
-    insight: "Your portfolio is heavily concentrated in US equities at 87% of total assets. Diversification score: Below Optimal.",
-    explainable_reasoning: "Current allocation provides maximum growth potential but increases volatility. Historical analysis shows 30% drawdown risk during market corrections. Adding 15-20% fixed-income allocation would reduce maximum drawdown to ~18% with only 2.1% annual return reduction.",
-    probability: "74% (drawdown risk within 12 months)",
-    confidence: "High (89%)",
-    risk_score: "Moderate-High (6/10)",
-    disclaimer: "Portfolio analysis is based on historical data and statistical models. Past performance does not guarantee future results.",
-  },
-  tax: {
-    insight: "One tax-loss harvesting opportunity identified: Sell HDFC Short Term Debt Fund (current loss: ₹2,400) to offset gains.",
-    explainable_reasoning: "Current holding shows -8.2% unrealized loss. Harvesting this loss before fiscal year-end could save approximately ₹720 in taxes (assuming 30% bracket). You can repurchase a similar but not substantially identical fund after 30 days.",
-    probability: "91% (tax savings estimate accuracy)",
-    confidence: "High",
-    risk_score: "Low (wash sale rule compliance required)",
-    disclaimer: "Tax optimization suggestions are for informational purposes. Consult a tax professional before executing any strategy.",
-  },
-}
+const quickCommands = [
+  { label: "Market Movers", desc: "Global indices overview" },
+  { label: "Trending News", desc: "Trending market news" },
+]
 
-function getMockResponse(query: string): Message["parsed"] {
-  const q = query.toLowerCase()
-  if (q.includes("aapl") || q.includes("apple")) return mockResponses.aapl
-  if (q.includes("portfolio") || q.includes("allocation") || q.includes("diversif")) return mockResponses.portfolio
-  if (q.includes("tax") || q.includes("harvest")) return mockResponses.tax
-  return mockResponses.default
-}
+function ZustAiContent() {
+  const searchParams = useSearchParams()
+  const initialQuery = searchParams?.get("q") || ""
 
-export default function ZustAiPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "",
-      parsed: {
-        insight: "Welcome to ZUST AI. How can I optimize your financial intelligence today?",
-        explainable_reasoning: "I am constantly monitoring your portfolio and macroeconomic trends. Ask me about any stock, your portfolio allocation, or tax optimization strategies.",
-        probability: "N/A",
-        confidence: "High",
-        risk_score: "N/A",
-        disclaimer: "ZUST AI provides statistical intelligence, not financial advice. Consider consulting a licensed fiduciary.",
-      },
-    },
-  ])
   const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { messages, sendMessage, status } = useChat({
+    api: "/api/ai/chat"
+  } as any)
+
+  const isLoading = status === "submitted" || status === "streaming"
+
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages, loading])
+  }, [messages, isLoading])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || loading) return
-
-    setError(null)
-    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input }
-    setMessages(prev => [...prev, userMessage])
+    if (!input.trim() || isLoading) return
+    const currentInput = input
     setInput("")
-    setLoading(true)
-
-    try {
-      const res = await fetch("http://localhost:4000/api/v1/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
-      })
-
-      if (!res.ok) throw new Error("Failed to get response")
-
-      const data = await res.json()
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "",
-        parsed: data.data || getMockResponse(input),
-      }
-      setMessages(prev => [...prev, assistantMessage])
-    } catch {
-      // Fallback to mock
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "",
-        parsed: getMockResponse(input),
-      }
-      setMessages(prev => [...prev, assistantMessage])
-    } finally {
-      setLoading(false)
-    }
+    sendMessage({ role: "user", parts: [{ type: "text", text: currentInput }] })
   }
 
+  // Auto-submit if there's an initial query from URL
+  useEffect(() => {
+    if (initialQuery && messages.length === 0) {
+      sendMessage({ role: "user", parts: [{ type: "text", text: initialQuery }] })
+    }
+  }, [initialQuery, messages.length, sendMessage])
+
   const handleSuggestedPrompt = (prompt: string) => {
-    setInput(prompt)
+    if (isLoading) return
+    sendMessage({ role: "user", parts: [{ type: "text", text: prompt }] })
   }
 
   const copyToClipboard = (text: string) => {
@@ -150,183 +68,149 @@ export default function ZustAiPage() {
     toast.success("Copied to clipboard")
   }
 
-  const regenerateLastResponse = () => {
-    const lastUserMessage = [...messages].reverse().find(m => m.role === "user")
-    if (lastUserMessage) {
-      const lastIdx = messages.length - 1
-      setMessages(prev => prev.slice(0, lastIdx))
-      setInput(lastUserMessage.content)
-      setTimeout(() => {
-        const form = document.querySelector("form")
-        if (form) form.requestSubmit()
-      }, 100)
-    }
-  }
-
-  const showSuggestions = messages.length <= 1
+  const showSuggestions = messages.length === 0
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)]">
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
-            <Bot className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-4">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+            <div className="absolute inset-0 rounded-2xl bg-indigo-500/10 blur-xl"></div>
+            <Bot className="h-6 w-6 text-indigo-400 relative z-10" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">ZUST AI Copilot</h2>
-            <p className="text-xs text-muted-foreground">Institutional-grade financial intelligence</p>
+            <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">ZUST AI Copilot</h2>
+            <p className="text-xs text-indigo-200/60 font-medium tracking-wide uppercase">Institutional-Grade Financial Intelligence</p>
           </div>
         </div>
-        <Badge variant="outline" className="text-accent border-accent/20">
-          <Sparkles className="h-3 w-3 mr-1" />
-          GPT-4o Powered
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-2 px-3 py-1 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            Real-Time Pipeline
+          </Badge>
+        </div>
       </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden border-white/[0.04] bg-[#0A0A0C]">
-        {/* Messages */}
+      <Card className="flex-1 flex flex-col overflow-hidden border-indigo-500/20 bg-black/40 backdrop-blur-2xl shadow-2xl relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />
+        
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin">
           {messages.map((m) => (
             <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
               {m.role === "user" ? (
-                <div className="bg-primary/15 border border-primary/20 text-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
-                  {m.content}
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border border-indigo-400/30 shadow-[0_4px_14px_0_rgba(99,102,241,0.39)] px-5 py-3 rounded-2xl rounded-tr-sm max-w-[80%] text-sm font-medium">
+                  {m.parts?.map((p: any, i: number) => p.type === 'text' ? <span key={i}>{p.text}</span> : null)}
                 </div>
               ) : (
-                <div className="w-full max-w-3xl space-y-3">
+                <div className="w-full max-w-3xl space-y-4">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-accent" />
-                    <span className="font-semibold text-accent tracking-wider text-xs uppercase">Zust Intelligence</span>
+                    <div className="p-1.5 rounded-md bg-indigo-500/20 border border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+                      <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                    </div>
+                    <span className="font-bold text-indigo-300 tracking-widest text-[10px] uppercase">Zust Intelligence</span>
                   </div>
 
-                  <Card className="bg-white/[0.02] border-white/[0.06]">
-                    <CardHeader className="pb-3 border-b border-white/[0.04]">
-                      <CardTitle className="text-base leading-relaxed font-medium">
-                        {m.parsed?.insight}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-3 space-y-3">
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Explainable Reasoning</p>
-                        <p className="text-muted-foreground text-sm leading-relaxed">
-                          {m.parsed?.explainable_reasoning}
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-3 border-t border-white/[0.04]">
-                        <div className="bg-black/30 p-2.5 sm:p-3 rounded-lg border border-white/[0.04]">
-                          <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-0.5 flex items-center gap-1">
-                            <TrendingUp className="h-2.5 w-2.5" /> Probability
-                          </p>
-                          <p className="text-xs sm:text-sm font-medium">{m.parsed?.probability}</p>
-                        </div>
-                        <div className="bg-black/30 p-2.5 sm:p-3 rounded-lg border border-white/[0.04]">
-                          <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-0.5">Confidence</p>
-                          <p className="text-xs sm:text-sm font-medium">{m.parsed?.confidence}</p>
-                        </div>
-                        <div className="bg-black/30 p-2.5 sm:p-3 rounded-lg border border-warning/20">
-                          <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-0.5">Risk Score</p>
-                          <p className="text-xs sm:text-sm font-medium text-warning">{m.parsed?.risk_score}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
-                          onClick={() => copyToClipboard(m.parsed?.insight || "")}
-                        >
-                          <Copy className="h-3 w-3" /> Copy
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
-                          onClick={regenerateLastResponse}
-                        >
-                          <RefreshCw className="h-3 w-3" /> Regenerate
-                        </Button>
-                      </div>
-
-                      <div className="p-2.5 bg-destructive/[0.06] border border-destructive/20 rounded-lg flex items-start gap-2">
-                        <ShieldAlert className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
-                        <p className="text-[11px] text-destructive/80 leading-relaxed">
-                          {m.parsed?.disclaimer}
-                        </p>
-                      </div>
+                  <Card className="bg-white/5 backdrop-blur-md border-indigo-500/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+                    <CardContent className="pt-4 space-y-4">
+                      {m.parts?.map((part: any, idx: number) => {
+                        if (part.type === 'tool-invocation') {
+                          return (
+                            <div key={idx} className="flex items-center gap-2 text-xs text-indigo-300/80 bg-indigo-500/5 border border-indigo-500/20 p-2 rounded-lg">
+                              <Activity className="h-3 w-3 animate-pulse" />
+                              {part.toolInvocation.state === "result" ? (
+                                <span>Extracted Live Data via <strong>{part.toolInvocation.toolName}</strong></span>
+                              ) : (
+                                <span>Fetching Live Data via <strong>{part.toolInvocation.toolName}</strong>...</span>
+                              )}
+                            </div>
+                          )
+                        }
+                        if (part.type === 'text' && part.text) {
+                          return (
+                            <div key={idx} className="text-indigo-50/90 markdown-wrapper">
+                              <div className="prose prose-invert prose-indigo max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:border prose-pre:border-indigo-500/30 prose-td:border-indigo-500/20 prose-th:border-indigo-500/30 prose-th:bg-indigo-500/10 text-sm">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {part.text}
+                                </ReactMarkdown>
+                              </div>
+                              <div className="flex items-center gap-2 pt-4 border-t border-border mt-4">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2" onClick={() => copyToClipboard(part.text)}>
+                                  <Copy className="h-3 w-3" /> Copy
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        }
+                        return null;
+                      })}
                     </CardContent>
                   </Card>
                 </div>
               )}
             </div>
           ))}
-
-          {loading && (
+          {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
             <div className="flex justify-start animate-fade-in">
-              <div className="flex items-center gap-2 text-muted-foreground bg-white/[0.03] px-4 py-2.5 rounded-full border border-white/[0.06]">
+              <div className="flex items-center gap-2 text-muted-foreground bg-muted/30 px-4 py-2.5 rounded-full border border-border">
                 <div className="flex gap-1">
                   <div className="h-1.5 w-1.5 bg-primary rounded-full animate-bounce" />
                   <div className="h-1.5 w-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.15s" }} />
                   <div className="h-1.5 w-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.3s" }} />
                 </div>
-                <span className="text-xs font-medium">Calculating probabilities...</span>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="flex items-center gap-2 bg-destructive/[0.06] border border-destructive/20 px-4 py-3 rounded-xl">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <p className="text-sm text-destructive">{error}</p>
-                <Button variant="ghost" size="sm" onClick={() => setError(null)} className="text-xs ml-2">
-                  Retry
-                </Button>
+                <span className="text-xs font-medium">Orchestrating AI Agent...</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Input Area */}
-        <div className="border-t border-white/[0.04] bg-[#08080A] p-3 sm:p-4">
-          {/* Suggested prompts */}
+        <div className="border-t border-indigo-500/20 bg-black/60 backdrop-blur-xl p-4 sm:p-6 z-10">
           {showSuggestions && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {suggestedPrompts.map((s) => (
-                <button
-                  key={s.label}
-                  onClick={() => handleSuggestedPrompt(s.prompt)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-all"
-                >
-                  <s.icon className="h-3 w-3" />
-                  {s.label}
-                </button>
-              ))}
+            <div className="space-y-3 mb-4 max-w-4xl mx-auto">
+              <div className="flex flex-wrap gap-2.5">
+                {suggestedPrompts.map((s) => (
+                  <button key={s.label} onClick={() => handleSuggestedPrompt(s.prompt)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-indigo-100/70 hover:text-white hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300">
+                    <s.icon className="h-3.5 w-3.5" />
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex gap-3 max-w-4xl mx-auto">
+          <form onSubmit={handleFormSubmit} className="flex gap-3 max-w-4xl mx-auto relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask ZUST AI to analyze a stock or run a scenario..."
-              className="flex-1 bg-white/[0.03] border-white/[0.06] h-11 sm:h-12 text-sm focus-visible:ring-primary"
-              disabled={loading}
+              placeholder="Ask anything about the markets..."
+              className="relative flex-1 bg-black/50 backdrop-blur-sm border-white/10 h-14 text-base focus-visible:ring-indigo-500/50 rounded-2xl placeholder:text-indigo-200/30 text-white shadow-inner"
+              disabled={isLoading}
             />
             <Button
               type="submit"
-              disabled={loading || !input.trim()}
-              className="h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-primary hover:bg-primary/90 text-white shrink-0"
+              disabled={isLoading || !input.trim()}
+              className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shrink-0 shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all duration-300 border border-white/10"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             </Button>
           </form>
-          <p className="text-center text-[10px] text-muted-foreground mt-2">
-            ZUST AI can make mistakes. Always verify critical financial data.
+          <p className="text-center text-[11px] font-medium tracking-wide text-indigo-200/40 mt-4 uppercase">
+            Powered by Groq 70b • Live data via Alpha Vantage & Finnhub
           </p>
         </div>
       </Card>
     </div>
+  )
+}
+
+export default function ZustAiPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-[50vh] text-muted-foreground">Loading AI Copilot...</div>}>
+      <ZustAiContent />
+    </Suspense>
   )
 }

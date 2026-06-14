@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { Video as LucideIcon } from "lucide-react"
+import { type LucideIcon } from "lucide-react"
 
 interface PageHeaderProps {
   icon?: LucideIcon

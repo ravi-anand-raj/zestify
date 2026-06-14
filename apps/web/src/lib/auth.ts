@@ -16,16 +16,42 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text", placeholder: "jsmith@example.com" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         
-        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
-        if (!user) return null;
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: { profile: true }
+          });
 
-        const inputHash = crypto.createHash('sha256').update(credentials.password).digest('hex');
-        if (user.passwordHash !== inputHash) return null;
+          if (!user || !user.passwordHash) return null;
 
-        return { id: user.id, email: user.email, name: user.email, role: "user" };
+          // Verify password hash (SHA-256)
+          const inputHash = crypto.createHash('sha256').update(credentials.password).digest('hex');
+          if (user.passwordHash !== inputHash) return null;
+
+          // Check user status
+          if (user.status !== 'ACTIVE') return null;
+
+          // Update last login timestamp
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { updatedAt: new Date() }
+          });
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.profile
+              ? `${user.profile.firstName || ''} ${user.profile.lastName || ''}`.trim()
+              : user.email,
+            role: "user"
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
+          return null;
+        }
       }
     })
   ],
@@ -54,4 +80,5 @@ export const authOptions: NextAuthOptions = {
     newUser: '/signup'
   },
   secret: process.env.NEXTAUTH_SECRET || "fallback_mock_secret_do_not_use_in_prod",
+  debug: process.env.NODE_ENV === 'development',
 };

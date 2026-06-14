@@ -10,5 +10,9 @@
     "dev": "npm run dev --workspaces",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces"
+  },
+  "dependencies": {
+    "react": "^19.0.0-rc-65a56d0e-20241020",
+    "react-dom": "^19.0.0-rc-65a56d0e-20241020"
   }
 }

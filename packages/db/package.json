@@ -1,16 +1,23 @@
 {
   "name": "@zestify/db",
   "version": "1.0.0",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "index.ts",
+  "types": "index.ts",
   "dependencies": {
     "@prisma/client": "^5.14.0"
   },
   "devDependencies": {
     "prisma": "^5.14.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2"
   },
   "scripts": {
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "ts-node prisma/seed.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
   }
 }

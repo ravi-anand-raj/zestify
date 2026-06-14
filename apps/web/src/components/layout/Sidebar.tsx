@@ -3,42 +3,43 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Wallet, ChartLine as LineChart, Bot, Route, Target, Calculator, Settings, CreditCard, Menu, X, Zap } from "lucide-react"
+import { LayoutDashboard, Wallet, LineChart, Bot, Route, Target, Calculator, Settings, CreditCard, Menu, X, Newspaper, Globe2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-
-const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Portfolio", href: "/portfolio", icon: Wallet },
-  { name: "Watchlist", href: "/watchlist", icon: LineChart },
-  { name: "ZUST AI", href: "/zust-ai", icon: Bot, highlight: true },
-  { name: "Roadmap", href: "/roadmap", icon: Route },
-  { name: "Goal Planner", href: "/goals", icon: Target },
-  { name: "Simulator", href: "/simulator", icon: Calculator },
-]
-
-const bottomItems = [
-  { name: "Billing", href: "/billing", icon: CreditCard },
-  { name: "Settings", href: "/settings", icon: Settings },
-]
+import { ZestifyLogo } from "@/components/shared/ZestifyLogo"
+import { useLanguage } from "@/components/providers/LanguageProvider"
+import { InstallPWA } from "@/components/ui/InstallPWA"
 
 export function Sidebar() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { t } = useLanguage()
+
+  const navItems = [
+    { name: t.nav.dashboard, href: "/dashboard", icon: LayoutDashboard },
+    { name: t.nav.portfolio, href: "/portfolio", icon: Wallet },
+    { name: t.nav.watchlist, href: "/watchlist", icon: LineChart },
+    { name: t.nav.updates, href: "/updates", icon: Newspaper },
+    { name: t.nav.news, href: "/news", icon: Globe2 },
+    { name: t.nav.zustAi, href: "/zust-ai", icon: Bot, highlight: true },
+    { name: t.nav.roadmap, href: "/roadmap", icon: Route },
+    { name: t.nav.goalPlanner, href: "/goals", icon: Target },
+    { name: t.nav.simulator, href: "/simulator", icon: Calculator },
+  ]
+
+  const bottomItems = [
+    { name: t.nav.billing, href: "/billing", icon: CreditCard },
+    { name: t.nav.settings, href: "/settings", icon: Settings },
+  ]
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center justify-between px-3 py-5">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-primary to-accent">
-            <Zap className="h-5 w-5 text-black" />
-          </div>
-          <span className="text-xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">
-            ZESTIFY
-          </span>
+          <ZestifyLogo size="sm" />
         </Link>
         <Button
           variant="ghost"
@@ -51,7 +52,7 @@ export function Sidebar() {
         </Button>
       </div>
 
-      <Separator className="mx-3 mb-2 bg-white/[0.04]" />
+      <Separator className="mx-3 mb-2 bg-border" />
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-2">
@@ -60,7 +61,7 @@ export function Sidebar() {
             const isActive = pathname === item.href
             return (
               <Link
-                key={item.name}
+                key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 aria-current={isActive ? "page" : undefined}
@@ -69,8 +70,8 @@ export function Sidebar() {
                   className={cn(
                     "group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                      ? "bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary"
+                      : "text-muted-foreground hover:bg-muted/60 dark:hover:bg-white/[0.04] hover:text-foreground",
                     item.highlight &&
                       !isActive &&
                       "text-primary/80 hover:text-primary"
@@ -101,13 +102,16 @@ export function Sidebar() {
 
       {/* Bottom Navigation */}
       <div className="mt-auto px-2 pb-2">
-        <Separator className="mb-2 bg-white/[0.04]" />
+        <div className="px-3 py-2">
+          <InstallPWA variant="sidebar" />
+        </div>
+        <Separator className="my-2 bg-border" />
         <div className="space-y-0.5">
           {bottomItems.map((item) => {
             const isActive = pathname === item.href
             return (
               <Link
-                key={item.name}
+                key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 aria-current={isActive ? "page" : undefined}
@@ -117,7 +121,7 @@ export function Sidebar() {
                     "group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
                     isActive
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 dark:hover:bg-white/[0.04] hover:text-foreground"
                   )}
                 >
                   <item.icon
@@ -162,7 +166,7 @@ export function Sidebar() {
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-[#0A0A0C] border-r border-white/[0.04] transform transition-transform duration-300 ease-out lg:hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-out lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -170,7 +174,7 @@ export function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col h-screen w-60 border-r border-white/[0.04] bg-[#0A0A0C]/90 backdrop-blur-xl sticky top-0 shrink-0">
+      <aside className="hidden lg:flex flex-col h-screen w-60 border-r border-border bg-card/80 dark:bg-card/50 backdrop-blur-xl sticky top-0 shrink-0">
         <SidebarContent />
       </aside>
     </>

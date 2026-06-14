@@ -92,11 +92,11 @@ async function main() {
     data: {
       userId: demoUser.id,
       score: 782,
-      componentsJson: {
+      componentsJson: JSON.stringify({
         debtToIncome: "A+",
         diversification: "B-",
         savingsRate: "A"
-      }
+      })
     }
   })
 
